@@ -4,15 +4,20 @@ import android.app.Application
 import android.graphics.Bitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.local.AppDatabase
 import com.example.data.local.ExtractedItemEntity
 import com.example.data.local.NotificationLogEntity
 import com.example.data.local.ScannedDocumentEntity
+import com.example.data.local.TaskEntity
 import com.example.data.model.ExtractionResponse
 import com.example.data.model.ItemCategory
 import com.example.data.model.ItemPriority
 import com.example.data.model.ItemType
 import com.example.data.model.UserAuthMode
+import com.example.data.model.WorkflowType
 import com.example.data.repository.LifeAdminRepository
+import com.example.data.repository.TaskRepository
+import com.example.data.repository.TaskRepositoryImpl
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -26,7 +31,13 @@ enum class ScreenRoute {
     SPLASH,
     ONBOARDING,
     AUTH,
+    TODAY,
     DASHBOARD,
+    TIMELINE,
+    ASK_AI,
+    DOCUMENT_MEMORY,
+    RENEWALS,
+    WORKFLOWS,
     SCAN_UPLOAD,
     PROCESSING_RESULTS,
     TASK_DETAIL,
@@ -39,16 +50,25 @@ enum class ScreenRoute {
 
 enum class ExtractionProcessingStep(val label: String) {
     IDLE("Ready"),
-    SCANNING_SOURCE("Scanning text & layout..."),
-    EXTRACTING_ENTITIES("Detecting dates, bills, and appointments..."),
-    CATEGORIZING("Categorizing & setting priorities..."),
-    GENERATING_ACTION_PLAN("Building clean daily action plan..."),
+    SCANNING_SOURCE("Scanning document & layout..."),
+    EXTRACTING_ENTITIES("Extracting deadlines, obligations & requirements..."),
+    CATEGORIZING("Connecting objects & prioritizing..."),
+    GENERATING_ACTION_PLAN("Formulating clean LifeAdmin plan..."),
     COMPLETED("Extraction Complete!")
 }
 
 class LifeAdminViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = LifeAdminRepository(application.applicationContext)
+    private val taskRepository: TaskRepository = TaskRepositoryImpl(
+        AppDatabase.getInstance(application.applicationContext).taskDao()
+    )
+
+    init {
+        viewModelScope.launch {
+            taskRepository.seedInitialTasks()
+        }
+    }
 
     // Navigation & Auth State
     private val _currentScreen = MutableStateFlow(ScreenRoute.DASHBOARD)
@@ -57,11 +77,24 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
     private val _userAuthMode = MutableStateFlow(UserAuthMode.GUEST)
     val userAuthMode: StateFlow<UserAuthMode> = _userAuthMode.asStateFlow()
 
-    private val _userName = MutableStateFlow("Guest User")
+    private val _userName = MutableStateFlow("Alex Morgan")
     val userName: StateFlow<String> = _userName.asStateFlow()
 
-    private val _userEmail = MutableStateFlow("guest@lifeadmin.ai")
+    private val _userEmail = MutableStateFlow("alex.morgan@lifeadmin.ai")
     val userEmail: StateFlow<String> = _userEmail.asStateFlow()
+
+    // Room Task Repository Streams (Daily Command Center: Critical, Today, Upcoming)
+    val allTasks: StateFlow<List<TaskEntity>> = taskRepository.allTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val criticalTasks: StateFlow<List<TaskEntity>> = taskRepository.criticalTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val todayTasks: StateFlow<List<TaskEntity>> = taskRepository.todayTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val upcomingTasks: StateFlow<List<TaskEntity>> = taskRepository.upcomingTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Database Streams
     val activeItems: StateFlow<List<ExtractedItemEntity>> = repository.activeItems
@@ -74,6 +107,18 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val notifications: StateFlow<List<NotificationLogEntity>> = repository.notifications
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val renewals: StateFlow<List<ExtractedItemEntity>> = repository.renewals
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val appointments: StateFlow<List<ExtractedItemEntity>> = repository.appointments
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val purchases: StateFlow<List<ExtractedItemEntity>> = repository.purchases
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val waitingForItems: StateFlow<List<ExtractedItemEntity>> = repository.waitingForItems
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Search & Filtering
@@ -92,15 +137,21 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
             val matchesQuery = query.isBlank() ||
                 item.title.contains(query, ignoreCase = true) ||
                 (item.description?.contains(query, ignoreCase = true) == true) ||
-                (item.companyOrPerson?.contains(query, ignoreCase = true) == true)
+                (item.companyOrPerson?.contains(query, ignoreCase = true) == true) ||
+                (item.merchant?.contains(query, ignoreCase = true) == true) ||
+                (item.productName?.contains(query, ignoreCase = true) == true) ||
+                (item.orderNumber?.contains(query, ignoreCase = true) == true)
             val matchesCategory = category == null || item.category == category
             matchesQuery && matchesCategory
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Item Selection Detail
+    // Item & Document Selection
     private val _selectedItemForDetail = MutableStateFlow<ExtractedItemEntity?>(null)
     val selectedItemForDetail: StateFlow<ExtractedItemEntity?> = _selectedItemForDetail.asStateFlow()
+
+    private val _selectedDocumentForDetail = MutableStateFlow<ScannedDocumentEntity?>(null)
+    val selectedDocumentForDetail: StateFlow<ScannedDocumentEntity?> = _selectedDocumentForDetail.asStateFlow()
 
     // AI Extraction Processing Pipeline State
     private val _processingStep = MutableStateFlow(ExtractionProcessingStep.IDLE)
@@ -109,13 +160,23 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
     private val _latestExtraction = MutableStateFlow<ExtractionResponse?>(null)
     val latestExtraction: StateFlow<ExtractionResponse?> = _latestExtraction.asStateFlow()
 
+    // Ask LifeAdmin AI Assistant
+    private val _askAiQuestion = MutableStateFlow("")
+    val askAiQuestion: StateFlow<String> = _askAiQuestion.asStateFlow()
+
+    private val _askAiAnswer = MutableStateFlow<String?>(null)
+    val askAiAnswer: StateFlow<String?> = _askAiAnswer.asStateFlow()
+
+    private val _isAskingAi = MutableStateFlow(false)
+    val isAskingAi: StateFlow<Boolean> = _isAskingAi.asStateFlow()
+
     // Audio / Voice Assistant
     private val _isSpeakingAudioBrief = MutableStateFlow(false)
     val isSpeakingAudioBrief: StateFlow<Boolean> = _isSpeakingAudioBrief.asStateFlow()
 
-    // Motivation & Gamification
-    val streakDays = MutableStateFlow(5)
-    val productivityScore = MutableStateFlow(92)
+    // Privacy Mode
+    private val _isPrivacyModeActive = MutableStateFlow(false)
+    val isPrivacyModeActive: StateFlow<Boolean> = _isPrivacyModeActive.asStateFlow()
 
     // User Notification Settings
     val isSmartRemindersEnabled = MutableStateFlow(true)
@@ -134,13 +195,13 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         _userAuthMode.value = UserAuthMode.EMAIL
         _userEmail.value = email.trim()
         val defaultName = email.substringBefore("@").replace(".", " ").capitalize()
-        _userName.value = if (defaultName.isNotBlank()) defaultName else "User"
+        _userName.value = if (defaultName.isNotBlank()) defaultName else "Alex Morgan"
         _currentScreen.value = ScreenRoute.DASHBOARD
     }
 
     fun signUpWithEmail(name: String, email: String) {
         _userAuthMode.value = UserAuthMode.EMAIL
-        _userName.value = name.trim().ifBlank { "User" }
+        _userName.value = name.trim().ifBlank { "Alex Morgan" }
         _userEmail.value = email.trim()
         _currentScreen.value = ScreenRoute.DASHBOARD
     }
@@ -181,6 +242,10 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun selectDocumentForDetail(doc: ScannedDocumentEntity?) {
+        _selectedDocumentForDetail.value = doc
+    }
+
     fun toggleItemCompletion(item: ExtractedItemEntity) {
         viewModelScope.launch {
             repository.toggleCompletion(item.id, !item.isCompleted)
@@ -197,6 +262,37 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun deleteItem(id: Long) {
+        viewModelScope.launch {
+            repository.deleteItem(id)
+            if (_selectedItemForDetail.value?.id == id) {
+                _selectedItemForDetail.value = null
+                _currentScreen.value = ScreenRoute.DASHBOARD
+            }
+        }
+    }
+
+    fun deleteDocument(id: Long) {
+        viewModelScope.launch {
+            repository.deleteDocument(id)
+            if (_selectedDocumentForDetail.value?.id == id) {
+                _selectedDocumentForDetail.value = null
+            }
+        }
+    }
+
+    fun markNotificationRead(id: Long) {
+        viewModelScope.launch {
+            repository.markNotificationAsRead(id)
+        }
+    }
+
+    fun markAllNotificationsRead() {
+        viewModelScope.launch {
+            repository.markAllNotificationsAsRead()
+        }
+    }
+
     fun snoozeItem(item: ExtractedItemEntity, snoozeLabel: String) {
         viewModelScope.launch {
             val updated = item.copy(dueDateString = "Snoozed ($snoozeLabel)")
@@ -204,15 +300,38 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun togglePrivacyMode() {
+        _isPrivacyModeActive.value = !_isPrivacyModeActive.value
+    }
+
+    fun askLifeAdmin(question: String) {
+        _askAiQuestion.value = question
+        _isAskingAi.value = true
+        _currentScreen.value = ScreenRoute.ASK_AI
+
+        viewModelScope.launch {
+            val answer = repository.askLifeAdmin(question)
+            _askAiAnswer.value = answer
+            _isAskingAi.value = false
+        }
+    }
+
+    fun launchWorkflow(workflow: WorkflowType) {
+        viewModelScope.launch {
+            repository.launchWorkflow(workflow)
+            _currentScreen.value = ScreenRoute.DASHBOARD
+        }
+    }
+
     fun processPastedText(rawText: String) {
         viewModelScope.launch {
             _currentScreen.value = ScreenRoute.PROCESSING_RESULTS
             _processingStep.value = ExtractionProcessingStep.SCANNING_SOURCE
-            delay(600)
-            _processingStep.value = ExtractionProcessingStep.EXTRACTING_ENTITIES
-            delay(700)
-            _processingStep.value = ExtractionProcessingStep.CATEGORIZING
             delay(500)
+            _processingStep.value = ExtractionProcessingStep.EXTRACTING_ENTITIES
+            delay(500)
+            _processingStep.value = ExtractionProcessingStep.CATEGORIZING
+            delay(400)
             _processingStep.value = ExtractionProcessingStep.GENERATING_ACTION_PLAN
 
             val result = repository.processTextExtraction(rawText, "EMAIL_TEXT")
@@ -226,11 +345,11 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             _currentScreen.value = ScreenRoute.PROCESSING_RESULTS
             _processingStep.value = ExtractionProcessingStep.SCANNING_SOURCE
-            delay(700)
+            delay(600)
             _processingStep.value = ExtractionProcessingStep.EXTRACTING_ENTITIES
-            delay(800)
+            delay(600)
             _processingStep.value = ExtractionProcessingStep.CATEGORIZING
-            delay(500)
+            delay(400)
             _processingStep.value = ExtractionProcessingStep.GENERATING_ACTION_PLAN
 
             val result = repository.processImageExtraction(bitmap, "SCREENSHOT")
@@ -281,6 +400,42 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.clearAllData()
             _currentScreen.value = ScreenRoute.DASHBOARD
+        }
+    }
+
+    // Room Task management actions (Local-first)
+    fun addNewTask(
+        title: String,
+        description: String? = null,
+        urgency: String = "MEDIUM",
+        deadlineFormatted: String? = null,
+        category: String = "Personal",
+        actionReason: String? = null
+    ) {
+        viewModelScope.launch {
+            taskRepository.insertTask(
+                TaskEntity(
+                    title = title,
+                    description = description,
+                    urgency = urgency,
+                    deadlineFormatted = deadlineFormatted,
+                    category = category,
+                    actionReason = actionReason,
+                    isCompleted = false
+                )
+            )
+        }
+    }
+
+    fun toggleTaskCompletion(task: TaskEntity) {
+        viewModelScope.launch {
+            taskRepository.toggleTaskCompletion(task.id, !task.isCompleted)
+        }
+    }
+
+    fun deleteTask(taskId: Long) {
+        viewModelScope.launch {
+            taskRepository.deleteTask(taskId)
         }
     }
 }

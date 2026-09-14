@@ -5,7 +5,6 @@ import android.graphics.Canvas
 import android.graphics.Color as AndroidColor
 import android.graphics.Paint
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,10 +24,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ContentPaste
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
@@ -62,7 +59,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.Cyan500
 import com.example.ui.theme.Emerald500
 import com.example.ui.theme.RoyalBlue600
 import com.example.ui.viewmodel.LifeAdminViewModel
@@ -76,39 +72,88 @@ fun ScanUploadScreen(
     var selectedTab by remember { mutableIntStateOf(0) } // 0: Paste, 1: Screenshot, 2: Camera, 3: Voice
     var textInput by remember { mutableStateOf("") }
 
-    // Sample Email / Chat scenarios
-    val sampleBillText = """
-        From: billing@citypower.com
-        Subject: Monthly Utility Bill Notice - Account #884920
-        Hi Alex,
-        Your electric utility statement for July is now ready. 
-        Total Amount Due: $142.50
-        Payment Due Date: August 12, 2026.
-        Please pay via the portal or auto-pay to avoid late fees.
+    val samplePassportText = """
+        From: National Passport Processing Center <appointments@travel.state.gov>
+        Subject: Confirmation: Passport Biometric Appointment #DS-82-9910
+        Dear Alex,
+        Your appointment is scheduled for September 22 at 11:00 AM at Regional Passport Agency, Floor 3.
+        MANDATORY DOCUMENTS TO BRING:
+        1. Form DS-82 printed & signed
+        2. Current expiring passport
+        3. Two compliant 2x2 color passport photos
+        4. Application fee ($130 certified check or money order)
+        Failure to bring these documents will require rescheduling.
     """.trimIndent()
 
-    val sampleChatText = """
-        WhatsApp message from Dr. Marcus Office:
-        "Hi Alex, confirming your dental checkup & X-ray for this Friday, Aug 8 at 3:30 PM. Location: Westside Health Plaza, Suite 102. Reply YES to confirm or call to reschedule."
+    val sampleElectricBillText = """
+        STATE ELECTRICITY BOARD
+        Monthly Residential Electric Bill Notice
+        Consumer Account: ACC-449210
+        Amount Payable: ₹1,240.00
+        Due Date: September 18, 2026
+        Prompt payment avoids late surcharge of ₹85.00.
+        Pay online at ebportal.gov or mobile banking.
     """.trimIndent()
 
-    val sampleRentText = """
-        From: management@apexapartments.com
-        Subject: Notice: Lease Renewal & Monthly Rent Statement
-        Dear Resident,
-        Your monthly rent payment of $1,850.00 for Unit 4B is due on August 5, 2026.
-        Please submit proof of renters insurance renewal before August 15.
+    val sampleInsuranceText = """
+        GEICO AUTO INSURANCE
+        Policy Renewal Notice #POL-88392-CA
+        Vehicle: 2023 Honda Civic Sedan
+        Your current policy term expires tomorrow at 11:59 PM.
+        To maintain continuous legal coverage without interruption, renew online today.
+        Renewal Premium: $118.00 / month.
+    """.trimIndent()
+
+    val sampleAmazonText = """
+        Amazon Order Confirmation #114-8923184
+        Item: Sony WH-1000XM5 Wireless Headphones
+        Order Date: August 28, 2026
+        Return Window Status: Eligible for return or replacement through September 28, 2026.
+        Manufacturer Warranty: 1-Year Limited Warranty active through August 2027.
+    """.trimIndent()
+
+    val sampleTravelText = """
+        American Airlines Booking Confirmation: W7K9LQ
+        Passenger: Alex Morgan
+        Flight AA 1420 to Chicago O'Hare (ORD)
+        Departure: September 24 at 8:00 AM from Terminal 2
+        Online Check-in opens 24 hours before flight.
+        Carry-on baggage: 1 personal item + 1 carry-on suitcase.
     """.trimIndent()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = "Smart Capture & Extraction",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(RoyalBlue600.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = null,
+                                tint = RoyalBlue600,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Life Inbox",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Turn messy information into structured actions",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(
@@ -131,6 +176,7 @@ fun ScanUploadScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .background(Color(0xFFF8FAFC))
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
                 .testTag("scan_upload_screen")
@@ -157,7 +203,7 @@ fun ScanUploadScreen(
                     selected = selectedTab == 2,
                     onClick = { selectedTab = 2 },
                     shape = SegmentedButtonDefaults.itemShape(index = 2, count = 4),
-                    icon = { Icon(Icons.Filled.CameraAlt, contentDescription = "Camera", modifier = Modifier.size(16.dp)) },
+                    icon = { Icon(Icons.Filled.CameraAlt, contentDescription = "Scan", modifier = Modifier.size(16.dp)) },
                     label = { Text("Scan", fontSize = 12.sp) }
                 )
                 SegmentedButton(
@@ -169,25 +215,26 @@ fun ScanUploadScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             when (selectedTab) {
                 0 -> {
                     // Paste Text Mode
                     Text(
-                        text = "Paste Email, Bill, Note, or Chat",
+                        text = "Paste Email, Receipt, Notice, or Letter",
                         style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0F172A)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
                     OutlinedTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        placeholder = { Text("Paste messy email content, chat text, or bills here...") },
+                        placeholder = { Text("Paste messy email content, forwarded messages, bill statements, or appointment notices...") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(180.dp)
+                            .height(160.dp)
                             .testTag("input_paste_text"),
                         shape = RoundedCornerShape(14.dp)
                     )
@@ -195,41 +242,62 @@ fun ScanUploadScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
-                        text = "Or tap a sample template:",
+                        text = "TAP A LIFE SCENARIO TEMPLATE:",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.Bold,
+                        color = RoyalBlue600,
+                        letterSpacing = 0.5.sp
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Preset Scenario Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         SampleChip(
-                            label = "Utility Bill Email",
-                            onClick = { textInput = sampleBillText },
+                            label = "Passport Appointment Notice",
+                            onClick = { textInput = samplePassportText },
                             modifier = Modifier.weight(1f)
                         )
                         SampleChip(
-                            label = "Doctor Chat",
-                            onClick = { textInput = sampleChatText },
+                            label = "Electricity Bill (₹1,240)",
+                            onClick = { textInput = sampleElectricBillText },
                             modifier = Modifier.weight(1f)
                         )
                     }
+
                     Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        SampleChip(
+                            label = "Car Insurance Expiration",
+                            onClick = { textInput = sampleInsuranceText },
+                            modifier = Modifier.weight(1f)
+                        )
+                        SampleChip(
+                            label = "Amazon Receipt & Warranty",
+                            onClick = { textInput = sampleAmazonText },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     SampleChip(
-                        label = "Rent & Lease Renewal Notice",
-                        onClick = { textInput = sampleRentText },
+                        label = "Flight Booking Itinerary (AA 1420)",
+                        onClick = { textInput = sampleTravelText },
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
                         onClick = {
-                            val targetText = textInput.ifBlank { sampleBillText }
+                            val targetText = textInput.ifBlank { samplePassportText }
                             viewModel.processPastedText(targetText)
                         },
                         modifier = Modifier
@@ -241,7 +309,7 @@ fun ScanUploadScreen(
                     ) {
                         Icon(Icons.Filled.AutoAwesome, contentDescription = "AI")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Extract Actions with AI", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Extract Obligations & Memory", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
 
@@ -250,14 +318,15 @@ fun ScanUploadScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(220.dp)
+                            .height(200.dp)
                             .clip(RoundedCornerShape(16.dp))
                             .clickable {
-                                val dummyBitmap = createDummyDocumentBitmap()
+                                val dummyBitmap = createSampleDocumentBitmap()
                                 viewModel.processImageUpload(dummyBitmap)
                             }
                             .testTag("upload_image_area"),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0))
                     ) {
                         Column(
                             modifier = Modifier.fillMaxSize(),
@@ -265,12 +334,12 @@ fun ScanUploadScreen(
                             verticalArrangement = Arrangement.Center
                         ) {
                             Surface(
-                                color = RoyalBlue600.copy(alpha = 0.15f),
+                                color = RoyalBlue600.copy(alpha = 0.1f),
                                 shape = CircleShape
                             ) {
                                 Box(modifier = Modifier.padding(16.dp)) {
                                     Icon(
-                                        imageVector = if (selectedTab == 1) Icons.Filled.PhotoLibrary else Icons.Filled.Camera,
+                                        imageVector = if (selectedTab == 1) Icons.Filled.PhotoLibrary else Icons.Filled.CameraAlt,
                                         contentDescription = "Upload",
                                         tint = RoyalBlue600,
                                         modifier = Modifier.size(36.dp)
@@ -279,24 +348,25 @@ fun ScanUploadScreen(
                             }
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = if (selectedTab == 1) "Tap to select screenshot or bill image" else "Tap to scan paper bill / letter",
+                                text = if (selectedTab == 1) "Tap to select screenshot or bill photo" else "Tap to scan paper bill / letter",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
                             )
                             Text(
-                                text = "Supports JPG, PNG, PDF receipts and letters",
+                                text = "Supports JPG, PNG, PDF receipts, policies and invoices",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = Color(0xFF64748B),
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
                         onClick = {
-                            val dummyBitmap = createDummyDocumentBitmap()
+                            val dummyBitmap = createSampleDocumentBitmap()
                             viewModel.processImageUpload(dummyBitmap)
                         },
                         modifier = Modifier
@@ -308,7 +378,7 @@ fun ScanUploadScreen(
                     ) {
                         Icon(Icons.Filled.AutoAwesome, contentDescription = "AI")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Analyze Document Image", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Analyze Document Image", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
 
@@ -317,8 +387,9 @@ fun ScanUploadScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(220.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                            .height(200.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE2E8F0)),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(
@@ -330,35 +401,38 @@ fun ScanUploadScreen(
                                 color = Emerald500.copy(alpha = 0.15f),
                                 shape = CircleShape
                             ) {
-                                Box(modifier = Modifier.padding(20.dp)) {
+                                Box(modifier = Modifier.padding(18.dp)) {
                                     Icon(
                                         imageVector = Icons.Filled.Mic,
                                         contentDescription = "Dictate",
                                         tint = Emerald500,
-                                        modifier = Modifier.size(48.dp)
+                                        modifier = Modifier.size(40.dp)
                                     )
                                 }
                             }
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
                             Text(
-                                text = "Speak your note or bill details",
+                                text = "Speak your note or obligation details",
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0F172A)
                             )
                             Text(
-                                text = "e.g., 'Pay dentist $120 by next Tuesday and call insurance'",
+                                text = "e.g., 'Pay electricity bill ₹1,240 by September 18 and renew car insurance'",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = Color(0xFF64748B),
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Button(
                         onClick = {
-                            viewModel.processPastedText("Voice Note: Pay dentist $120 statement due next Tuesday and confirm dental insurance claim.")
+                            viewModel.processPastedText(
+                                "Voice Note: Need to pay electricity bill ₹1,240 by September 18 and complete passport photo."
+                            )
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -367,9 +441,9 @@ fun ScanUploadScreen(
                         shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Emerald500)
                     ) {
-                        Icon(Icons.Filled.Mic, contentDescription = "Voice")
+                        Icon(Icons.Filled.AutoAwesome, contentDescription = "Process Voice")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Process Dictated Voice Note", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Process Voice Dictation", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
                 }
             }
@@ -384,40 +458,41 @@ fun SampleChip(
     modifier: Modifier = Modifier
 ) {
     Surface(
-        onClick = onClick,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+        color = Color.White,
         shape = RoundedCornerShape(10.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFCBD5E1)),
         modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
     ) {
-        Box(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = label,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF334155),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+        )
     }
 }
 
-private fun createDummyDocumentBitmap(): Bitmap {
-    val bitmap = Bitmap.createBitmap(400, 500, Bitmap.Config.ARGB_8888)
+private fun createSampleDocumentBitmap(): Bitmap {
+    val bitmap = Bitmap.createBitmap(400, 300, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    canvas.drawColor(AndroidColor.WHITE)
-
     val paint = Paint()
-    paint.color = AndroidColor.BLACK
-    paint.textSize = 24f
-    paint.isAntiAlias = true
 
-    canvas.drawText("ELECTRIC POWER STATEMENT", 30f, 60f, paint)
-    paint.textSize = 18f
-    canvas.drawText("Account #: 992-482", 30f, 100f, paint)
-    canvas.drawText("Amount Due: $124.80", 30f, 140f, paint)
-    canvas.drawText("Due Date: Aug 12, 2026", 30f, 180f, paint)
-    canvas.drawText("Company: Metro Power & Light", 30f, 220f, paint)
+    paint.color = AndroidColor.WHITE
+    canvas.drawRect(0f, 0f, 400f, 300f, paint)
+
+    paint.color = AndroidColor.BLACK
+    paint.textSize = 20f
+    canvas.drawText("OFFICIAL STATEMENT & NOTICE", 20f, 40f, paint)
+
+    paint.textSize = 14f
+    paint.color = AndroidColor.DKGRAY
+    canvas.drawText("State Power Board - Account #884102", 20f, 80f, paint)
+    canvas.drawText("Due Date: September 18, 2026", 20f, 110f, paint)
+    canvas.drawText("Total Due: ₹1,240.00", 20f, 140f, paint)
+    canvas.drawText("Please retain receipt for your records.", 20f, 170f, paint)
+
     return bitmap
 }

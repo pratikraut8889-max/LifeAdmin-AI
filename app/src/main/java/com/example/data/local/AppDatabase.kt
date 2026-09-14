@@ -34,9 +34,10 @@ class Converters {
     entities = [
         ExtractedItemEntity::class,
         ScannedDocumentEntity::class,
-        NotificationLogEntity::class
+        NotificationLogEntity::class,
+        TaskEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -44,6 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
     abstract fun documentDao(): DocumentDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun taskDao(): TaskDao
 
     companion object {
         @Volatile

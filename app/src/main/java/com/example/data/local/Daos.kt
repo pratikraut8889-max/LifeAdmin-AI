@@ -19,6 +19,18 @@ interface ItemDao {
     @Query("SELECT * FROM extracted_items WHERE category = :category AND isArchived = 0 ORDER BY isCompleted ASC, dueDate ASC")
     fun getItemsByCategory(category: ItemCategory): Flow<List<ExtractedItemEntity>>
 
+    @Query("SELECT * FROM extracted_items WHERE type = 'RENEWAL' AND isArchived = 0 ORDER BY isCompleted ASC, renewalDate ASC, id DESC")
+    fun getRenewals(): Flow<List<ExtractedItemEntity>>
+
+    @Query("SELECT * FROM extracted_items WHERE type = 'APPOINTMENT' AND isArchived = 0 ORDER BY isCompleted ASC, dueDate ASC, id DESC")
+    fun getAppointments(): Flow<List<ExtractedItemEntity>>
+
+    @Query("SELECT * FROM extracted_items WHERE type = 'PURCHASE_ADMIN' AND isArchived = 0 ORDER BY isCompleted ASC, returnDeadline ASC, id DESC")
+    fun getPurchases(): Flow<List<ExtractedItemEntity>>
+
+    @Query("SELECT * FROM extracted_items WHERE isWaitingFor = 1 AND isArchived = 0 ORDER BY isCompleted ASC, id DESC")
+    fun getWaitingForItems(): Flow<List<ExtractedItemEntity>>
+
     @Query("SELECT * FROM extracted_items WHERE id = :id")
     suspend fun getItemById(id: Long): ExtractedItemEntity?
 
@@ -49,8 +61,14 @@ interface DocumentDao {
     @Query("SELECT * FROM scanned_documents ORDER BY uploadDate DESC")
     fun getAllDocuments(): Flow<List<ScannedDocumentEntity>>
 
+    @Query("SELECT * FROM scanned_documents WHERE id = :id")
+    suspend fun getDocumentById(id: Long): ScannedDocumentEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDocument(doc: ScannedDocumentEntity): Long
+
+    @Query("DELETE FROM scanned_documents WHERE id = :id")
+    suspend fun deleteDocument(id: Long)
 
     @Query("DELETE FROM scanned_documents")
     suspend fun deleteAllDocuments()
@@ -69,6 +87,9 @@ interface NotificationDao {
 
     @Query("UPDATE notification_logs SET isRead = 1")
     suspend fun markAllAsRead()
+
+    @Query("DELETE FROM notification_logs WHERE id = :id")
+    suspend fun deleteNotification(id: Long)
 
     @Query("DELETE FROM notification_logs")
     suspend fun deleteAllNotifications()

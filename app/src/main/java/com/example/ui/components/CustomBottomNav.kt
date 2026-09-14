@@ -5,17 +5,15 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddAPhoto
-import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Dashboard
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.filled.FolderShared
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.outlined.Dashboard
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.FolderShared
+import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material.icons.outlined.Timeline
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.Icon
@@ -44,14 +42,14 @@ fun CustomBottomNav(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
-        // Dashboard
+        // Today / Dashboard
         NavigationBarItem(
-            selected = currentRoute == ScreenRoute.DASHBOARD,
-            onClick = { onNavigate(ScreenRoute.DASHBOARD) },
+            selected = currentRoute == ScreenRoute.TODAY || currentRoute == ScreenRoute.DASHBOARD,
+            onClick = { onNavigate(ScreenRoute.TODAY) },
             icon = {
                 Icon(
-                    imageVector = if (currentRoute == ScreenRoute.DASHBOARD) Icons.Filled.Dashboard else Icons.Outlined.Dashboard,
-                    contentDescription = "Dashboard"
+                    imageVector = if (currentRoute == ScreenRoute.TODAY || currentRoute == ScreenRoute.DASHBOARD) Icons.Filled.Dashboard else Icons.Outlined.Dashboard,
+                    contentDescription = "Today"
                 )
             },
             label = { Text("Today") },
@@ -62,76 +60,76 @@ fun CustomBottomNav(
             modifier = Modifier.testTag("nav_dashboard")
         )
 
-        // Planner / Calendar
+        // Timeline
         NavigationBarItem(
-            selected = currentRoute == ScreenRoute.CALENDAR,
-            onClick = { onNavigate(ScreenRoute.CALENDAR) },
+            selected = currentRoute == ScreenRoute.TIMELINE,
+            onClick = { onNavigate(ScreenRoute.TIMELINE) },
             icon = {
                 Icon(
-                    imageVector = if (currentRoute == ScreenRoute.CALENDAR) Icons.Filled.CalendarMonth else Icons.Outlined.CalendarMonth,
-                    contentDescription = "Calendar"
+                    imageVector = if (currentRoute == ScreenRoute.TIMELINE) Icons.Filled.Timeline else Icons.Outlined.Timeline,
+                    contentDescription = "Timeline"
                 )
             },
-            label = { Text("Planner") },
+            label = { Text("Timeline") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = RoyalBlue600,
                 indicatorColor = MaterialTheme.colorScheme.primaryContainer
             ),
-            modifier = Modifier.testTag("nav_calendar")
+            modifier = Modifier.testTag("nav_timeline")
         )
 
-        // FAB Center Scan/Upload Accent Button
+        // Life Inbox FAB (Center)
         FloatingActionButton(
             onClick = { onNavigate(ScreenRoute.SCAN_UPLOAD) },
             containerColor = RoyalBlue600,
             contentColor = androidx.compose.ui.graphics.Color.White,
-            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 8.dp),
+            elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
             shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
             modifier = Modifier
                 .size(52.dp)
                 .testTag("fab_scan_upload")
         ) {
             Icon(
-                imageVector = Icons.Filled.AddAPhoto,
-                contentDescription = "Scan or Upload Content",
-                modifier = Modifier.size(24.dp)
+                imageVector = Icons.Filled.Add,
+                contentDescription = "Life Inbox",
+                modifier = Modifier.size(26.dp)
             )
         }
 
-        // Search & Filter
+        // Document Memory
         NavigationBarItem(
-            selected = currentRoute == ScreenRoute.SEARCH,
-            onClick = { onNavigate(ScreenRoute.SEARCH) },
+            selected = currentRoute == ScreenRoute.DOCUMENT_MEMORY,
+            onClick = { onNavigate(ScreenRoute.DOCUMENT_MEMORY) },
             icon = {
                 Icon(
-                    imageVector = if (currentRoute == ScreenRoute.SEARCH) Icons.Filled.Search else Icons.Outlined.Search,
-                    contentDescription = "Search"
+                    imageVector = if (currentRoute == ScreenRoute.DOCUMENT_MEMORY) Icons.Filled.FolderShared else Icons.Outlined.FolderShared,
+                    contentDescription = "Documents"
                 )
             },
-            label = { Text("Search") },
+            label = { Text("Documents") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = RoyalBlue600,
                 indicatorColor = MaterialTheme.colorScheme.primaryContainer
             ),
-            modifier = Modifier.testTag("nav_search")
+            modifier = Modifier.testTag("nav_documents")
         )
 
-        // Profile / Settings
+        // Ask AI
         NavigationBarItem(
-            selected = currentRoute == ScreenRoute.PROFILE,
-            onClick = { onNavigate(ScreenRoute.PROFILE) },
+            selected = currentRoute == ScreenRoute.ASK_AI,
+            onClick = { onNavigate(ScreenRoute.ASK_AI) },
             icon = {
                 Icon(
-                    imageVector = if (currentRoute == ScreenRoute.PROFILE) Icons.Filled.Person else Icons.Outlined.Person,
-                    contentDescription = "Profile"
+                    imageVector = if (currentRoute == ScreenRoute.ASK_AI) Icons.Filled.Psychology else Icons.Outlined.Psychology,
+                    contentDescription = "Ask AI"
                 )
             },
-            label = { Text("Profile") },
+            label = { Text("Ask AI") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = RoyalBlue600,
                 indicatorColor = MaterialTheme.colorScheme.primaryContainer
             ),
-            modifier = Modifier.testTag("nav_profile")
+            modifier = Modifier.testTag("nav_ask_ai")
         )
     }
 }
