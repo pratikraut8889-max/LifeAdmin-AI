@@ -1,0 +1,6 @@
+{
+  "name": "LifeAdmin AI",
+  "description": "AI-powered personal life admin assistant that turns messy emails, bills, notes, and screenshots into structured daily actions and reminders.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
