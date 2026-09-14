@@ -24,11 +24,12 @@ data class TaskEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val title: String,
-    val description: String? = null,
     val deadline: Long? = null, // epoch millis
     val deadlineFormatted: String? = null, // e.g. "Today, 5:00 PM", "Sep 18, 2026"
     val urgency: String = "MEDIUM", // CRITICAL, HIGH, MEDIUM, LOW
     val isCompleted: Boolean = false,
+    val relatedDocumentId: Long? = null, // ID of related scanned document / memory item
+    val description: String? = null,
     val category: String = "Personal", // Personal, Financial, Legal, Health, Home, Auto
     val actionReason: String? = null, // Explains priority reason (e.g. "Fine doubles if unpaid by midnight")
     val createdAt: Long = System.currentTimeMillis()

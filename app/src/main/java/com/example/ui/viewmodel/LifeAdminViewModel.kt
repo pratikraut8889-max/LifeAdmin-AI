@@ -410,7 +410,8 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
         urgency: String = "MEDIUM",
         deadlineFormatted: String? = null,
         category: String = "Personal",
-        actionReason: String? = null
+        actionReason: String? = null,
+        relatedDocumentId: Long? = null
     ) {
         viewModelScope.launch {
             taskRepository.insertTask(
@@ -421,6 +422,7 @@ class LifeAdminViewModel(application: Application) : AndroidViewModel(applicatio
                     deadlineFormatted = deadlineFormatted,
                     category = category,
                     actionReason = actionReason,
+                    relatedDocumentId = relatedDocumentId,
                     isCompleted = false
                 )
             )

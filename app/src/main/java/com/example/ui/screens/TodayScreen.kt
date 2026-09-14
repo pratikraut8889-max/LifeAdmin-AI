@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
@@ -483,14 +484,15 @@ fun TodayScreen(
     if (showAddTaskDialog) {
         AddTaskDialog(
             onDismiss = { showAddTaskDialog = false },
-            onAddTask = { title, desc, urgency, deadline, category, reason ->
+            onAddTask = { title, desc, urgency, deadline, category, reason, relDocId ->
                 viewModel.addNewTask(
                     title = title,
                     description = desc,
                     urgency = urgency,
                     deadlineFormatted = deadline,
                     category = category,
-                    actionReason = reason
+                    actionReason = reason,
+                    relatedDocumentId = relDocId
                 )
                 showAddTaskDialog = false
             }
@@ -658,6 +660,32 @@ fun CriticalTaskCard(
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Crimson500
+                            )
+                        }
+                    }
+                }
+
+                if (task.relatedDocumentId != null) {
+                    Surface(
+                        color = Color(0xFFEFF6FF),
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AttachFile,
+                                contentDescription = null,
+                                tint = RoyalBlue600,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "Doc #${task.relatedDocumentId}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = RoyalBlue600
                             )
                         }
                     }
@@ -855,6 +883,32 @@ fun StandardTaskCard(
                             )
                         }
                     }
+
+                    if (task.relatedDocumentId != null) {
+                        Surface(
+                            color = Color(0xFFEFF6FF),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.AttachFile,
+                                    contentDescription = null,
+                                    tint = RoyalBlue600,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Doc #${task.relatedDocumentId}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = RoyalBlue600
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -976,6 +1030,32 @@ fun UpcomingTaskCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
+
+                    if (task.relatedDocumentId != null) {
+                        Surface(
+                            color = Color(0xFFEFF6FF),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.AttachFile,
+                                    contentDescription = null,
+                                    tint = RoyalBlue600,
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Doc #${task.relatedDocumentId}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = RoyalBlue600
+                                )
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -1094,7 +1174,7 @@ fun EmptySectionCard(
 @Composable
 fun AddTaskDialog(
     onDismiss: () -> Unit,
-    onAddTask: (title: String, desc: String?, urgency: String, deadline: String?, category: String, reason: String?) -> Unit
+    onAddTask: (title: String, desc: String?, urgency: String, deadline: String?, category: String, reason: String?, relatedDocId: Long?) -> Unit
 ) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -1102,6 +1182,7 @@ fun AddTaskDialog(
     var deadline by remember { mutableStateOf("Today, 5:00 PM") }
     var category by remember { mutableStateOf("Personal") }
     var actionReason by remember { mutableStateOf("") }
+    var relatedDocIdStr by remember { mutableStateOf("") }
 
     val urgencyOptions = listOf("CRITICAL", "HIGH", "MEDIUM", "LOW")
     val categoryOptions = listOf("Personal", "Financial / Utility", "Legal / Identity", "Auto", "Health", "Home", "Purchases", "Travel")
@@ -1227,6 +1308,17 @@ fun AddTaskDialog(
                 )
 
                 OutlinedTextField(
+                    value = relatedDocIdStr,
+                    onValueChange = { relatedDocIdStr = it.filter { ch -> ch.isDigit() } },
+                    label = { Text("Related Document ID (Optional)") },
+                    placeholder = { Text("e.g. 1") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("input_task_related_doc"),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
                     label = { Text("Description / Notes (Optional)") },
@@ -1248,7 +1340,8 @@ fun AddTaskDialog(
                             urgency,
                             deadline.ifBlank { null },
                             category,
-                            actionReason.ifBlank { null }
+                            actionReason.ifBlank { null },
+                            relatedDocIdStr.toLongOrNull()
                         )
                     }
                 },

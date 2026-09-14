@@ -20,6 +20,7 @@ interface TaskRepository {
     suspend fun toggleTaskCompletion(taskId: Long, isCompleted: Boolean)
     suspend fun deleteTask(taskId: Long)
     suspend fun getTaskById(id: Long): TaskEntity?
+    fun getTasksByDocumentId(documentId: Long): Flow<List<TaskEntity>>
     suspend fun seedInitialTasks()
 }
 
@@ -73,6 +74,10 @@ class TaskRepositoryImpl(
         taskDao.getTaskById(id)
     }
 
+    override fun getTasksByDocumentId(documentId: Long): Flow<List<TaskEntity>> {
+        return taskDao.getTasksByDocumentId(documentId)
+    }
+
     override suspend fun seedInitialTasks() = withContext(Dispatchers.IO) {
         if (taskDao.getCount() > 0) return@withContext
 
@@ -85,6 +90,7 @@ class TaskRepositoryImpl(
                 deadlineFormatted = "Today, 11:59 PM",
                 urgency = "CRITICAL",
                 isCompleted = false,
+                relatedDocumentId = 1L,
                 category = "Auto / Legal",
                 actionReason = "Coverage lapses at midnight; fines & registration suspension risk"
             ),
@@ -95,6 +101,7 @@ class TaskRepositoryImpl(
                 deadlineFormatted = "Tomorrow, 11:00 AM",
                 urgency = "CRITICAL",
                 isCompleted = false,
+                relatedDocumentId = 2L,
                 category = "Legal / Identity",
                 actionReason = "Appointment requires physical documents; appointment will be cancelled if missing"
             ),
@@ -105,6 +112,7 @@ class TaskRepositoryImpl(
                 deadlineFormatted = "Today, 6:00 PM",
                 urgency = "HIGH",
                 isCompleted = false,
+                relatedDocumentId = 3L,
                 category = "Utility / Bill",
                 actionReason = "Avoid ₹85 late surcharge"
             ),
